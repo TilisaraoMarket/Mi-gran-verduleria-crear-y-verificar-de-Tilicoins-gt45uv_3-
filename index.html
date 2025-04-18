@@ -523,6 +523,10 @@
             const coinCanje = document.getElementById('coinCanje').value;
             const fechaVencimiento = document.getElementById('fechaVencimiento').value;
             
+            // Obtener el canvas y convertir a base64
+            const canvas = document.getElementById('coinCanvas');
+            const imageData = canvas.toDataURL('image/png');
+            
             // Crear el objeto con los datos
             const tilicoinData = {
                 serialNumber: serialNumber,
@@ -532,7 +536,8 @@
                 patron: coinPattern,
                 valor: coinValue,
                 canje: coinCanje,
-                fechaVencimiento: fechaVencimiento || null
+                fechaVencimiento: fechaVencimiento || null,
+                imagen: imageData  // Agregamos la imagen base64
             };
 
             // Convertir a JSON
