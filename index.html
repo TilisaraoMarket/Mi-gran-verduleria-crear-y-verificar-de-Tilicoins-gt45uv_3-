@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -395,113 +396,248 @@
             }
         }
 
+        // Función mejorada para descarga en móviles
         function descargarTilicoin() {
-            // Crear un canvas temporal para fusionar la moneda y el QR
             const tempCanvas = document.createElement("canvas");
             const tempCtx = tempCanvas.getContext("2d");
             tempCanvas.width = 800;
             tempCanvas.height = 800;
 
-            // Dibujar el canvas principal escalado a 800x800
             tempCtx.drawImage(canvas, 0, 0, 800, 800);
 
-            // Traer el QR
-            if (qrOverlay.src) {
-                const qrImage = new Image();
-                qrImage.src = qrOverlay.src;
-                // Esperar a que cargue la imagen del QR
-                qrImage.onload = () => {
-                    // Dibujar el QR en la esquina superior derecha
-                    tempCtx.drawImage(qrImage, 800 - 100, 20, 80, 80);
-                    // Generar la descarga
-                    iniciarDescargaMobile(tempCanvas);
-                };
-            } else {
-                iniciarDescargaMobile(tempCanvas);
-            }
-        }
+            // Cargar QR si existe
+            const cargarQR = new Promise((resolve) => {
+                if (qrOverlay.src) {
+                    const qrImage = new Image();
+                    qrImage.crossOrigin = "Anonymous";
+                    qrImage.src = qrOverlay.src;
+                    qrImage.onload = () => {
+                        tempCtx.drawImage(qrImage, 700, 20, 80, 80);
+                        resolve();
+                    };
+                    qrImage.onerror = resolve;
+                } else {
+                    resolve();
+                }
+            });
 
+            cargarQR.then(() => {
+                if (navigator.userAgent.match(/iPhone|iPad|iPod/i)) {
+                    // Solución para iOS
+                    const imgData = tempCanvas.toDataURL("image/png");
+                    const newTab = window.open();
+                    newTab.document.write(`<img src="${imgData}" onload="window.URL.createObjectURL(this.src)" />`);
+                } else {
+                    // Método estándar para Android
+                    tempCanvas.toBlob((blob) => {
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `${nombre}-${serialNumber}.png`;
+                        
+                        // Simular click en Android
+                        const event = new MouseEvent('click', {
+                            view: window,
+                            bubbles: true,
+                            cancelable: true
+                        });
+                        link.dispatchEvent(event);
+                        
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    }, 'image/png');
+                }
+            });
+        }
         function iniciarDescargaMobile(tempCanvas) {
             const nombre = document
                 .getElementById("nombreComercio")
                 .value.replace(/\s+/g, "-") || "tilicoin";
             const fileName = `${nombre}-${serialNumber}.png`;
             
-            try {
-                // Crear un enlace temporal
+            // Intentar método moderno con Blob primero
+            if (navigator.msSaveBlob || tempCanvas.toBlob) { // Soporte para IE/Edge o navegadores modernos
+                try {
+                    // Función para manejar el blob
+                    const handleBlob = (blob) => {
+                        // Para IE/Edge
+                        if (navigator.msSaveBlob) {
+                            navigator.msSaveBlob(blob, fileName);
+                            return;
+                        }
+                        
+                        // Para navegadores modernos
+                        const blobUrl = URL.createObjectURL(blob);
+                        
+                        // Crear contenedor para el botón de descarga
+                        const downloadContainer = document.createElement('div');
+                        downloadContainer.style.position = 'fixed';
+                        downloadContainer.style.top = '50%';
+                        downloadContainer.style.left = '50%';
+                        downloadContainer.style.transform = 'translate(-50%, -50%)';
+                        downloadContainer.style.backgroundColor = 'white';
+                        downloadContainer.style.padding = '20px';
+                        downloadContainer.style.borderRadius = '10px';
+                        downloadContainer.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+                        downloadContainer.style.zIndex = '1000';
+                        
+                        // Crear enlace de descarga
+                        const downloadLink = document.createElement('a');
+                        downloadLink.href = blobUrl;
+                        downloadLink.download = fileName;
+                        downloadLink.className = 'button download-button';
+                        downloadLink.style.display = 'block';
+                        downloadLink.style.marginBottom = '10px';
+                        downloadLink.textContent = 'Descargar Imagen';
+                        
+                        // Botón para cerrar
+                        const closeButton = document.createElement('button');
+                        closeButton.textContent = 'Cerrar';
+                        closeButton.className = 'button';
+                        closeButton.onclick = () => {
+                            document.body.removeChild(downloadContainer);
+                            URL.revokeObjectURL(blobUrl);
+                        };
+                        
+                        // Agregar elementos al contenedor
+                        downloadContainer.appendChild(downloadLink);
+                        downloadContainer.appendChild(closeButton);
+                        
+                        // Agregar al documento
+                        document.body.appendChild(downloadContainer);
+                    };
+                    
+                    // Usar toBlob si está disponible
+                    if (tempCanvas.toBlob) {
+                        tempCanvas.toBlob(handleBlob, 'image/png');
+                    } else {
+                        // Convertir dataURL a Blob manualmente para IE
+                        const dataURL = tempCanvas.toDataURL('image/png');
+                        const byteString = atob(dataURL.split(',')[1]);
+                        const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
+                        const ab = new ArrayBuffer(byteString.length);
+                        const ia = new Uint8Array(ab);
+                        for (let i = 0; i < byteString.length; i++) {
+                            ia[i] = byteString.charCodeAt(i);
+                        }
+                        const blob = new Blob([ab], {type: mimeString});
+                        handleBlob(blob);
+                    }
+                } catch (e) {
+                    console.error("Error al usar método Blob:", e);
+                    // Fallback al método antiguo
+                    const enlace = document.createElement("a");
+                    enlace.download = fileName;
+                    enlace.href = tempCanvas.toDataURL("image/png");
+                    enlace.click();
+                }
+            } else {
+                // Fallback para navegadores antiguos
                 const enlace = document.createElement("a");
                 enlace.download = fileName;
                 enlace.href = tempCanvas.toDataURL("image/png");
-                
-                // Para dispositivos móviles, necesitamos agregar el enlace al documento
-                document.body.appendChild(enlace);
-                
-                // Simular clic
-                if (document.createEvent) {
-                    const evt = document.createEvent("MouseEvents");
-                    evt.initMouseEvent("click", true, true, window, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
-                    enlace.dispatchEvent(evt);
-                } else {
-                    enlace.click();
-                }
-                
-                // Eliminar el enlace temporal
-                document.body.removeChild(enlace);
-                
-                // Limpiar la memoria
-                tempCanvas.toDataURL("image/png");
-            } catch (e) {
-                console.error("Error al descargar la imagen:", e);
-                alert("Error al descargar la imagen. Por favor, intenta nuevamente.");
+                enlace.click();
             }
         }
 
-        function descargarJSON() {
-            const nombre = document
-                .getElementById("nombreComercio")
-                .value.replace(/\s+/g, "-") || "tilicoin";
-            const fileName = `${nombre}-${serialNumber}.json`;
-            
-            try {
-                // Crear un enlace temporal
-                const enlace = document.createElement("a");
-                enlace.download = fileName;
-                
-                // Preparar el contenido JSON
+       
+            // Función unificada y mejorada para descargar JSON
+            function descargarJSON() {
+                // Obtener datos completos del formulario
+                const tilicoinData = {
+                    serialNumber: serialNumber,
+                    nombreComercio: document.getElementById('nombreComercio').value,
+                    tipo: document.getElementById('coinType').value,
+                    color: document.getElementById('coinColor').value,
+                    patron: document.getElementById('coinPattern').value,
+                    valor: document.getElementById('coinValue').value,
+                    canje: document.getElementById('coinCanje').value,
+                    fechaVencimiento: document.getElementById('fechaVencimiento').value || null,
+                    fechaCreacion: new Date().toISOString()
+                };
+
                 const jsonContent = JSON.stringify(tilicoinData, null, 2);
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(jsonContent);
-                enlace.href = dataStr;
-                
-                // Para dispositivos móviles, necesitamos agregar el enlace al documento
-                document.body.appendChild(enlace);
-                
-                // Simular clic
-                if (document.createEvent) {
-                    const evt = document.createEvent("MouseEvents");
-                    evt.initMouseEvent("click", true, true, window, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
-                    enlace.dispatchEvent(evt);
-                } else {
-                    enlace.click();
-                }
-                
-                // Eliminar el enlace temporal
-                document.body.removeChild(enlace);
-                
-            } catch (e) {
-                console.error("Error al descargar el JSON:", e);
-                alert("Error al descargar el archivo JSON. Por favor, intenta nuevamente.");
-            }
-        }
+                const fileName = `tilicoin_${serialNumber}.json`;
 
-        // Generar un tilicoin inicial al cargar la página
-        window.onload = () => {
-            // Establecer el nombre fijo
-            document.getElementById('nombreComercio').value = "MI GRAN VERDULERIA";
-            // Ajustar el select para que aplique los valores por defecto
-            handleCoinTypeChange();
-            // Generar el tilicoin inicial
-            generarTilicoin();
-        };
-    </script>
-</body>
+                try {
+                    const blob = new Blob([jsonContent], { type: 'application/json' });
+                    
+                    // Soporte para IE/Edge
+                    if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+                        window.navigator.msSaveOrOpenBlob(blob, fileName);
+                        return;
+                    }
+                    
+                    // Método cross-browser
+                    const url = URL.createObjectURL(blob);
+                    
+                    // Solución para móviles
+                    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = fileName;
+                        document.body.appendChild(link);
+                        const event = new MouseEvent('click', {
+                            view: window,
+                            bubbles: true,
+                            cancelable: true
+                        });
+                        link.dispatchEvent(event);
+                        document.body.removeChild(link);
+                    } else {
+                        // Mostrar diálogo de descarga para desktop
+                        const downloadContainer = document.createElement('div');
+                        downloadContainer.style.position = 'fixed';
+                        downloadContainer.style.top = '50%';
+                        downloadContainer.style.left = '50%';
+                        downloadContainer.style.transform = 'translate(-50%, -50%)';
+                        downloadContainer.style.backgroundColor = 'white';
+                        downloadContainer.style.padding = '20px';
+                        downloadContainer.style.borderRadius = '10px';
+                        downloadContainer.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+                        downloadContainer.style.zIndex = '1000';
+
+                        const downloadLink = document.createElement('a');
+                        downloadLink.href = url;
+                        downloadLink.download = fileName;
+                        downloadLink.className = 'button json-button';
+                        downloadLink.textContent = 'Descargar JSON';
+
+                        const closeButton = document.createElement('button');
+                        closeButton.textContent = 'Cerrar';
+                        closeButton.className = 'button';
+                        closeButton.onclick = () => {
+                            document.body.removeChild(downloadContainer);
+                            URL.revokeObjectURL(url);
+                        };
+
+                        downloadContainer.appendChild(downloadLink);
+                        downloadContainer.appendChild(closeButton);
+                        document.body.appendChild(downloadContainer);
+                    }
+                    
+                    setTimeout(() => URL.revokeObjectURL(url), 5000);
+                } catch (e) {
+                    console.error("Error en descarga:", e);
+                    // Fallback básico
+                    const link = document.createElement('a');
+                    link.href = 'data:text/json;charset=utf-8,' + encodeURIComponent(jsonContent);
+                    link.download = fileName;
+                    link.click();
+                }
+            }
+
+            // Inicialización
+            window.onload = () => {
+                // Configuración inicial
+                document.getElementById('nombreComercio').value = "MI GRAN VERDULERIA";
+                handleCoinTypeChange();
+                generarTilicoin();
+                
+                // Inicializar componentes
+                canvas = document.getElementById('coinCanvas');
+                ctx = canvas.getContext('2d');
+                qrOverlay = document.getElementById('qrOverlay');
+            };
+        </script>
+    </body>
 </html>
