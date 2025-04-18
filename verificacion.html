@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificador de Tilicoins</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        body {
+            background-color: #f0f2f5;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #2e1c80;
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+        }
+        .verificador {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .button {
+            background-color: #4c1d95;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        .button:hover {
+            background-color: #6d28d9;
+        }
+        .creator-button {
+            background-color: #047857 !important;
+            margin-top: 1rem;
+            display: inline-block;
+            text-decoration: none;
+            text-align: center;
+        }
+        .resultado {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border-radius: 8px;
+            display: none;
+        }
+        .resultado-valido {
+            background-color: #d1fae5;
+            border: 1px solid #10b981;
+        }
+        .resultado-invalido {
+            background-color: #fee2e2;
+            border: 1px solid #ef4444;
+        }
+        .resultado h3 {
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        .resultado-valido h3 {
+            color: #047857;
+        }
+        .resultado-invalido h3 {
+            color: #b91c1c;
+        }
+        .tilicoin-details {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f8fafc;
+            border-radius: 8px;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .file-input-container {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+        .file-input-label {
+            display: block;
+            padding: 12px;
+            background-color: #e2e8f0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .file-input-label:hover {
+            background-color: #cbd5e1;
+        }
+        .file-input {
+            position: absolute;
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            z-index: -1;
+        }
+        .file-list {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            display: none;
+        }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        .or-divider {
+            text-align: center;
+            margin: 1.5rem 0;
+            position: relative;
+        }
+        .or-divider::before, .or-divider::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            width: 45%;
+            height: 1px;
+            background-color: #ddd;
+        }
+        .or-divider::before {
+            left: 0;
+        }
+        .or-divider::after {
+            right: 0;
+        }
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+        .tilicoin-database {
+            margin-top: 2rem;
+            padding: 1rem;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .tilicoin-item {
+            padding: 0.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .tilicoin-item:hover {
+            background-color: #e2e8f0;
+        }
+        .tilicoin-item:last-child {
+            border-bottom: none;
+        }
+        .import-status {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f0f9ff;
+            border-radius: 8px;
+            border: 1px solid #bae6fd;
+            display: none;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #e2e8f0;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+        }
+        .progress-bar {
+            height: 10px;
+            background-color: #3b82f6;
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .folder-input-container {
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Verificador de Tilicoins</h1>
+        <p>Verifica la autenticidad de tus Tilicoins</p>
+        <div class="nav-buttons">
+            <a href="crear tilicoins.html" class="button creator-button">Ir a Creador de Tilicoins</a>
+        </div>
+    </header>
+
+    <div class="verificador">
+        <div class="form-group">
+            <label for="serialInput">Número de Serie del Tilicoin:</label>
+            <input type="text" id="serialInput" placeholder="Ejemplo: TLC-LR9YJVS-KCGXVP" maxlength="30">
+        </div>
+
+        <button class="button" onclick="verificarPorSerial()">Verificar por Serial</button>
+
+        <div class="or-divider">O</div>
+
+        <div class="folder-input-container">
+            <label for="jsonFolderInput" class="file-input-label">
+                Importar carpeta de Tilicoins (múltiples JSON)
+            </label>
+            <input type="file" id="jsonFolderInput" class="file-input" webkitdirectory directory multiple onchange="importarCarpetaTilicoins(this)">
+        </div>
+
+        <div id="importStatus" class="import-status">
+            <h4>Importando Tilicoins...</h4>
+            <div class="progress-container">
+                <div id="importProgress" class="progress-bar"></div>
+            </div>
+            <p id="importDetails">Procesando archivos: 0/0</p>
+        </div>
+
+        <div class="or-divider">O</div>
+
+        <div class="form-group">
+            <label for="qrScanButton">Escanear código QR:</label>
+            <button class="button" id="qrScanButton" onclick="iniciarEscaneoQR()">Escanear QR</button>
+        </div>
+
+        <!-- Área para mostrar el resultado de la verificación -->
+        <div id="resultadoVerificacion" class="resultado">
+            <!-- El contenido se llenará dinámicamente -->
+        </div>
+
+        <!-- Base de datos local de Tilicoins -->
+        <div class="tilicoin-database" id="tilicoinDatabase">
+            <h3>Tilicoins Registrados</h3>
+            <div id="tilicoinList">
+                <!-- La lista se llenará dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Almacenamiento local para los Tilicoins
+        let tilicoinsDatabase = {};
+
+        // Cargar la base de datos al iniciar
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarBaseDatos();
+            actualizarInterfaz();
+        });
+
+        // Manejar el cambio en el input de archivo
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const files = e.target.files;
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            fileList.style.display = files.length > 0 ? 'block' : 'none';
+
+            // Mostrar lista de archivos seleccionados
+            for (const file of files) {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.textContent = file.name;
+                fileList.appendChild(fileItem);
+            }
+
+            // Procesar todos los archivos
+            procesarArchivos(files);
+        });
+
+        function procesarArchivos(files) {
+            const progressContainer = document.createElement('div');
+            progressContainer.className = 'import-status';
+            progressContainer.innerHTML = `
+                <p>Procesando archivos...</p>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: 0%"></div>
+                </div>
+            `;
+            document.querySelector('.verificador').appendChild(progressContainer);
+
+            let processedFiles = 0;
+            const totalFiles = files.length;
+
+            for (const file of files) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        verificarTilicoin(data);
+                        actualizarProgress(progressContainer, processedFiles++, totalFiles);
+                    } catch (error) {
+                        console.error(`Error procesando ${file.name}:`, error);
+                        actualizarProgress(progressContainer, processedFiles++, totalFiles);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function actualizarProgress(container, processed, total) {
+            const progress = (processed / total) * 100;
+            container.querySelector('.progress-bar').style.width = `${progress}%`;
+            if (processed === total) {
+                setTimeout(() => {
+                    container.remove();
+                }, 1000);
+            }
+        }
+
+        // Función para cargar la base de datos desde localStorage
+        function cargarBaseDatos() {
+            const storedData = localStorage.getItem('tilicoinsDatabase');
+            if (storedData) {
+                tilicoinsDatabase = JSON.parse(storedData);
+                actualizarListaTilicoins();
+            }
+        }
+
+        // Función para guardar la base de datos en localStorage
+        function guardarBaseDeDatos() {
+            localStorage.setItem('tilicoinsDatabase', JSON.stringify(tilicoinsDatabase));
+            actualizarListaTilicoins();
+        }
+
+        // Actualizar la lista visual de Tilicoins
+        function actualizarListaTilicoins() {
+            const listContainer = document.getElementById('tilicoinList');
+            listContainer.innerHTML = '';
+
+            if (Object.keys(tilicoinsDatabase).length === 0) {
+                listContainer.innerHTML = '<p>No hay Tilicoins registrados.</p>';
+                return;
+            }
+
+            for (const serial in tilicoinsDatabase) {
+                const tilicoin = tilicoinsDatabase[serial];
+                const item = document.createElement('div');
+                item.className = 'tilicoin-item';
+                item.innerHTML = `
+                    <strong>${serial}</strong> - ${tilicoin.comercio || 'Sin nombre'} 
+                    (${tilicoin.usado ? 'Usado' : 'Disponible'})
+                `;
+                item.onclick = function() {
+                    document.getElementById('serialInput').value = serial;
+                    verificarPorSerial();
+                };
+                listContainer.appendChild(item);
+            }
+        }
+
+        // Verificar por número de serie
+        function verificarPorSerial() {
+            const serial = document.getElementById('serialInput').value.trim();
+            if (!serial) {
+                mostrarResultado(false, "Por favor, ingresa un número de serie.");
+                return;
+            }
+
+            const tilicoin = tilicoinsDatabase[serial];
+            if (!tilicoin) {
+                mostrarResultado(false, "Tilicoin no encontrado en la base de datos.");
+                return;
+            }
+
+            mostrarResultado(true, tilicoin, serial);
+        }
+
+        // Verificar por archivo JSON
+        function verificarPorArchivo(input) {
+            if (!input.files || input.files.length === 0) {
+                return;
+            }
+
+            const file = input.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                try {
+                    const tilicoinData = JSON.parse(e.target.result);
+                    
+                    // Verificar si el JSON tiene la estructura correcta
+                    if (!tilicoinData.serialNumber) {
+                        mostrarResultado(false, "El archivo JSON no contiene un Tilicoin válido.");
+                        return;
+                    }
+
+                    // Guardar en la base de datos local si no existe
+                    if (!tilicoinsDatabase[tilicoinData.serialNumber]) {
+                        tilicoinsDatabase[tilicoinData.serialNumber] = {
+                            comercio: tilicoinData.nombreComercio,
+                            tipo: tilicoinData.tipo,
+                            color: tilicoinData.color,
+                            patron: tilicoinData.patron,
+                            valor: tilicoinData.valor,
+                            canje: tilicoinData.canje,
+                            fechaVencimiento: tilicoinData.fechaVencimiento,
+                            usado: false
+                        };
+                        guardarBaseDeDatos();
+                    }
+
+                    // Mostrar el resultado
+                    mostrarResultado(true, tilicoinsDatabase[tilicoinData.serialNumber], tilicoinData.serialNumber);
+                    
+                    // Actualizar el campo de serial para referencia
+                    document.getElementById('serialInput').value = tilicoinData.serialNumber;
+                } catch (error) {
+                    mostrarResultado(false, "Error al procesar el archivo: " + error.message);
+                }
+            };
+
+            reader.readAsText(file);
+        }
+
+        // Importar múltiples Tilicoins desde una carpeta
+        function importarCarpetaTilicoins(input) {
+            if (!input.files || input.files.length === 0) {
+                return;
+            }
+
+            const files = Array.from(input.files).filter(file => file.name.endsWith('.json'));
+            
+            if (files.length === 0) {
+                mostrarResultado(false, "No se encontraron archivos JSON en la carpeta seleccionada.");
+                return;
+            }
+
+            // Mostrar el estado de importación
+            const importStatus = document.getElementById('importStatus');
+            const importProgress = document.getElementById('importProgress');
+            const importDetails = document.getElementById('importDetails');
+            
+            importStatus.style.display = 'block';
+            importDetails.textContent = `Procesando archivos: 0/${files.length}`;
+            importProgress.style.width = '0%';
+
+            let processed = 0;
+            let imported = 0;
+            
+            // Procesar cada archivo
+            files.forEach(file => {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        const tilicoinData = JSON.parse(e.target.result);
+                        
+                        // Verificar si el JSON tiene la estructura correcta
+                        if (tilicoinData.serialNumber) {
+                            // Guardar en la base de datos local si no existe
+                            if (!tilicoinsDatabase[tilicoinData.serialNumber]) {
+                                tilicoinsDatabase[tilicoinData.serialNumber] = {
+                                    comercio: tilicoinData.nombreComercio,
+                                    tipo: tilicoinData.tipo,
+                                    color: tilicoinData.color,
+                                    patron: tilicoinData.patron,
+                                    valor: tilicoinData.valor,
+                                    canje: tilicoinData.canje,
+                                    fechaVencimiento: tilicoinData.fechaVencimiento,
+                                    usado: false
+                                };
+                                guardarBaseDeDatos();
+                                imported++;
+                            }
+
+                            // Mostrar el resultado
+                            mostrarResultado(true, tilicoinsDatabase[tilicoinData.serialNumber], tilicoinData.serialNumber);
+                        }
+                    } catch (error) {
+                        console.error(`Error procesando ${file.name}:`, error);
+                    }
+
+                    // Actualizar el progreso
+                    processed++;
+                    importDetails.textContent = `Procesando archivos: ${processed}/${files.length}`;
+                    importProgress.style.width = `${(processed / files.length) * 100}%`;
+
+                    // Ocultar el estado de importación si se completó
+                    if (processed === files.length) {
+                        setTimeout(() => {
+                            importStatus.style.display = 'none';
+                        }, 1000);
+                    }
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        // Función para mostrar el resultado de la verificación
+        function mostrarResultado(esValido, datos, serial) {
+            const resultado = document.getElementById('resultadoVerificacion');
+            resultado.className = `resultado ${esValido ? 'resultado-valido' : 'resultado-invalido'}`;
+            resultado.style.display = 'block';
+
+            if (esValido) {
+                resultado.innerHTML = `
+                    <h3>Tilicoin Válido</h3>
+                    <div class="tilicoin-details">
+                        <div class="detail-row">
+                            <span>Número de Serie:</span>
+                            <span>${serial}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Comercio:</span>
+                            <span>${datos.comercio || 'Sin especificar'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Tipo:</span>
+                            <span>${datos.tipo}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Valor:</span>
+                            <span>${datos.valor}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Estado:</span>
+                            <span>${datos.usado ? 'Usado' : 'Disponible'}</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                resultado.innerHTML = `
+                    <h3>Tilicoin Inválido</h3>
+                    <p>${datos}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
